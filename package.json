@@ -1,0 +1,15 @@
+{
+  "name": "doctor-site",
+  "version": "1.0.0",
+  "description": "Patient, booking and admin website for Prof. Dr. Javed Iqbal",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
