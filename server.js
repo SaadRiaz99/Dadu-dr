@@ -194,7 +194,7 @@ storage.init().then(({ mode }) => {
   app.listen(PORT, () => {
     console.log('Doctor site running on http://localhost:' + PORT + ' (storage: ' + mode + ')');
     console.log('Change the admin password with the ADMIN_PASSWORD environment variable.');
-    console.log('Notifications: set TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID (free) or Twilio env vars for SMS.');
+    console.log('Notifications: set TWILIO_ACCOUNT_SID + TWILIO_AUTH_TOKEN + TWILIO_FROM + NOTIFY_TO (SMS).');
     console.log('Appointments within ' + AUTO_CONFIRM_HOURS + 'h are auto-confirmed; job runs every ' + (AUTO_CONFIRM_INTERVAL / 60000) + ' min.');
   });
   autoConfirmSoon();

@@ -25,18 +25,6 @@ function formatConfirmed(a) {
   ].join('\n');
 }
 
-async function sendTelegram(text) {
-  const token = process.env.TELEGRAM_BOT_TOKEN;
-  const chatId = process.env.TELEGRAM_CHAT_ID;
-  if (!token || !chatId) return false;
-  const res = await fetch('https://api.telegram.org/bot' + token + '/sendMessage', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ chat_id: chatId, text })
-  });
-  return res.ok;
-}
-
 async function sendTwilioSms(text) {
   const sid = process.env.TWILIO_ACCOUNT_SID;
   const auth = process.env.TWILIO_AUTH_TOKEN;
@@ -59,12 +47,11 @@ async function sendTwilioSms(text) {
 async function notifyNewAppointment(a) {
   const text = formatAppointment(a);
   const sent = [];
-  sent.push(await sendTelegram(text).catch((e) => { console.error('Telegram failed:', e.message); return false; }));
   sent.push(await sendTwilioSms(text).catch((e) => { console.error('Twilio failed:', e.message); return false; }));
 
   if (!sent.some(Boolean)) {
     console.log('[notification] New appointment (no channel configured):\n' + text);
-    console.log('Set TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID (free) or TWILIO_ACCOUNT_SID + TWILIO_AUTH_TOKEN + TWILIO_FROM + NOTIFY_TO (SMS) to get notified.');
+    console.log('Set TWILIO_ACCOUNT_SID + TWILIO_AUTH_TOKEN + TWILIO_FROM + NOTIFY_TO (SMS) to get notified.');
   }
   return sent;
 }
@@ -72,7 +59,6 @@ async function notifyNewAppointment(a) {
 async function notifyConfirmed(a) {
   const text = formatConfirmed(a);
   const sent = [];
-  sent.push(await sendTelegram(text).catch((e) => { console.error('Telegram failed:', e.message); return false; }));
   sent.push(await sendTwilioSms(text).catch((e) => { console.error('Twilio failed:', e.message); return false; }));
 
   if (!sent.some(Boolean)) {
