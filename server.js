@@ -124,6 +124,18 @@ app.get('/api/appointments/:ref', async (req, res) => {
   res.json({ appointment: a });
 });
 
+/* ---------- API: public status lookup (ref + phone) ---------- */
+app.post('/api/appointments/lookup', async (req, res) => {
+  const { ref, phone } = req.body || {};
+  const a = await storage.getByRef(String(ref || '').trim());
+  if (!a) return res.status(404).json({ error: 'No appointment found with that reference' });
+  const norm = (s) => String(s || '').trim().replace(/[\s-]/g, '');
+  if (norm(phone).length === 0 || norm(phone) !== norm(a.phone)) {
+    return res.status(403).json({ error: 'Reference and phone number do not match' });
+  }
+  res.json({ appointment: a });
+});
+
 /* ---------- API: admin login ---------- */
 app.post('/api/admin/login', (req, res) => {
   const { password } = req.body || {};

@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Check Appointment | Prof. Dr. Javed Iqbal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="chatbot.css">
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav container">
+      <a href="index.html" class="logo">Prof. Dr. Javed Iqbal</a>
+      <ul class="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="index.html#about">About</a></li>
+        <li><a href="index.html#services">Services</a></li>
+        <li><a href="index.html#contact">Contact</a></li>
+      </ul>
+      <a href="book.html" class="btn btn-primary btn-nav">Book Appointment</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="page-head">
+      <div class="container">
+        <span class="badge">Appointment Status</span>
+        <h1>Check your appointment</h1>
+        <p>Enter your reference number and the phone number you booked with.</p>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container login-box" id="lookupBox">
+        <label for="ref">Reference number</label>
+        <input type="text" id="ref" name="ref" class="field" placeholder="e.g. APT-XXXXXX" autocomplete="off">
+        <label for="phone">Phone number used for booking</label>
+        <input type="tel" id="phone" name="phone" class="field" placeholder="e.g. 0300 1234567">
+        <button type="button" id="lookupBtn" class="btn btn-primary btn-block" style="margin-top:1.2rem;">Check Status</button>
+        <p id="lookupMsg" class="form-msg" role="status"></p>
+        <p class="muted-note" style="text-align:center;">Lost your reference? Call the clinic during opening hours.</p>
+      </div>
+
+      <div class="container success-box hidden" id="resultBox" style="max-width:640px;">
+        <div class="success-card" id="resultCard"></div>
+        <div class="hero-actions success-actions">
+          <a href="index.html" class="btn btn-primary">Back to Home</a>
+          <button type="button" id="checkAgain" class="btn btn-outline">Check Another</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <p>&copy; Prof. Dr. Javed Iqbal. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script>
+    const lookupBox = document.getElementById('lookupBox');
+    const resultBox = document.getElementById('resultBox');
+    const resultCard = document.getElementById('resultCard');
+    const msg = document.getElementById('lookupMsg');
+
+    function to12(t) {
+      const [h, m] = (t || '00:00').split(':').map(Number);
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      const hr = h % 12 || 12;
+      return hr + ':' + String(m).padStart(2, '0') + ' ' + ampm;
+    }
+
+    function niceDate(d) {
+      const dt = new Date(d + 'T00:00:00');
+      return dt.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    }
+
+    function esc(s) {
+      const div = document.createElement('div');
+      div.textContent = s == null ? '' : s;
+      return div.innerHTML;
+    }
+
+    function row(label, value) {
+      return '<div class="success-row"><span>' + label + '</span><strong>' + value + '</strong></div>';
+    }
+
+    document.getElementById('lookupBtn').addEventListener('click', async () => {
+      const ref = document.getElementById('ref').value.trim();
+      const phone = document.getElementById('phone').value.trim();
+      msg.textContent = 'Checking...';
+      msg.className = 'form-msg';
+      if (!ref || !phone) {
+        msg.textContent = 'Please enter both your reference number and phone number.';
+        msg.className = 'form-msg error';
+        return;
+      }
+      const btn = document.getElementById('lookupBtn');
+      btn.disabled = true;
+      try {
+        const res = await fetch('/api/appointments/lookup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ref, phone })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          msg.textContent = data.error || 'Could not find your appointment.';
+          msg.className = 'form-msg error';
+          return;
+        }
+        const a = data.appointment;
+        const statusClass = 'status-' + (a.status || 'pending').toLowerCase();
+        resultCard.innerHTML =
+          row('Reference', esc(a.ref)) +
+          row('Doctor', esc(a.doctor || 'Prof. Dr. Javed Iqbal')) +
+          row('Service', esc(a.service || 'ENT Consultation')) +
+          row('Charge', esc(a.charge || '—')) +
+          row('Date', esc(niceDate(a.date))) +
+          row('Time', esc(to12(a.time))) +
+          '<div class="success-row"><span>Status</span><strong><span class="status-pill ' + statusClass + '">' + esc(a.status) + '</span></strong></div>';
+        lookupBox.classList.add('hidden');
+        resultBox.classList.remove('hidden');
+      } catch (e) {
+        msg.textContent = 'Network error. Please try again.';
+        msg.className = 'form-msg error';
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    document.getElementById('checkAgain').addEventListener('click', () => {
+      resultBox.classList.add('hidden');
+      lookupBox.classList.remove('hidden');
+      msg.textContent = '';
+      msg.className = 'form-msg';
+    });
+
+    ['ref', 'phone'].forEach((id) => {
+      document.getElementById(id).addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') document.getElementById('lookupBtn').click();
+      });
+    });
+  </script>
+  <script src="chatbot.js"></script>
+</body>
+</html>
