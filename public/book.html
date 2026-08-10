@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Book an Appointment | Prof. Dr. Javed Iqbal</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav container">
+      <a href="index.html" class="logo">Prof. Dr. Javed Iqbal</a>
+      <ul class="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="index.html#about">About</a></li>
+        <li><a href="index.html#services">Services</a></li>
+        <li><a href="index.html#contact">Contact</a></li>
+      </ul>
+      <a href="book.html" class="btn btn-primary btn-nav">Book Appointment</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="page-head">
+      <div class="container">
+        <h1>Book an Appointment</h1>
+        <p>Select a date and available time, then fill in your details.</p>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container booking-grid">
+        <div class="contact-form">
+          <h3>Appointment details</h3>
+
+          <label for="name">Full name</label>
+          <input type="text" id="name" name="name" placeholder="e.g. Ahmed Khan" required>
+
+          <label for="phone">Phone number</label>
+          <input type="tel" id="phone" name="phone" placeholder="e.g. 0300 1234567" required>
+
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" placeholder="e.g. ahmed@email.com" required>
+
+          <label for="date">Preferred date</label>
+          <input type="date" id="date" name="date" required>
+
+          <div class="slot-wrap">
+            <label>Available times</label>
+            <div id="slots" class="slot-grid">
+              <p class="slot-hint">Pick a date above to see available times.</p>
+            </div>
+          </div>
+
+          <label for="message">Message (optional)</label>
+          <textarea id="message" name="message" rows="3" placeholder="Tell us about your problem"></textarea>
+
+          <button type="button" id="submitBtn" class="btn btn-primary btn-block">Confirm Booking</button>
+          <p id="formMsg" class="form-msg" role="status"></p>
+        </div>
+
+        <aside class="booking-side">
+          <h3>Clinic hours</h3>
+          <ul class="contact-list">
+            <li><strong>Monday – Friday:</strong> [9:00 AM – 5:00 PM]</li>
+            <li><strong>Saturday:</strong> [9:00 AM – 1:00 PM]</li>
+            <li><strong>Sunday:</strong> Closed</li>
+          </ul>
+          <p class="muted-note">Need urgent care? Call [+00 000 000 000].</p>
+        </aside>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <p>&copy; Prof. Dr. Javed Iqbal. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script>
+    const dateInput = document.getElementById('date');
+    const slotsBox = document.getElementById('slots');
+    const msg = document.getElementById('formMsg');
+    let selectedTime = '';
+
+    dateInput.min = new Date().toISOString().split('T')[0];
+
+    dateInput.addEventListener('change', loadSlots);
+
+    async function loadSlots() {
+      selectedTime = '';
+      const date = dateInput.value;
+      if (!date) return;
+      slotsBox.innerHTML = '<p class="slot-hint">Loading available times...</p>';
+      try {
+        const res = await fetch('/api/slots?date=' + date);
+        const data = await res.json();
+        if (data.closed) {
+          slotsBox.innerHTML = '<p class="slot-hint">Clinic is closed on this day. Please pick another date.</p>';
+          return;
+        }
+        if (!data.available.length) {
+          slotsBox.innerHTML = '<p class="slot-hint">All times are booked for this date. Please pick another day.</p>';
+          return;
+        }
+        slotsBox.innerHTML = '';
+        data.available.forEach((t) => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'slot-btn';
+          btn.textContent = to12(t);
+          btn.onclick = () => {
+            selectedTime = t;
+            document.querySelectorAll('.slot-btn').forEach((b) => b.classList.remove('active'));
+            btn.classList.add('active');
+          };
+          slotsBox.appendChild(btn);
+        });
+      } catch (e) {
+        slotsBox.innerHTML = '<p class="slot-hint">Could not load slots. Try again.</p>';
+      }
+    }
+
+    function to12(t) {
+      const [h, m] = t.split(':').map(Number);
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      const hr = h % 12 || 12;
+      return hr + ':' + String(m).padStart(2, '0') + ' ' + ampm;
+    }
+
+    document.getElementById('submitBtn').addEventListener('click', async () => {
+      msg.textContent = '';
+      const name = document.getElementById('name').value.trim();
+      const phone = document.getElementById('phone').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const date = dateInput.value;
+      const message = document.getElementById('message').value.trim();
+
+      if (!name || !phone || !email) {
+        msg.textContent = 'Please fill in your name, phone and email.';
+        msg.className = 'form-msg error';
+        return;
+      }
+      if (!date) {
+        msg.textContent = 'Please pick a date.';
+        msg.className = 'form-msg error';
+        return;
+      }
+      if (!selectedTime) {
+        msg.textContent = 'Please pick an available time.';
+        msg.className = 'form-msg error';
+        return;
+      }
+
+      msg.textContent = 'Booking...';
+      msg.className = 'form-msg';
+
+      try {
+        const res = await fetch('/api/appointments', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, phone, email, date, time: selectedTime, message })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          msg.textContent = data.error || 'Something went wrong.';
+          msg.className = 'form-msg error';
+          if (res.status === 409) loadSlots();
+          return;
+        }
+        window.location.href = 'success.html?ref=' + data.appointment.ref;
+      } catch (e) {
+        msg.textContent = 'Network error. Please try again.';
+        msg.className = 'form-msg error';
+      }
+    });
+  </script>
+</body>
+</html>
