@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin | Prof. Dr. Javed Iqbal</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav container">
+      <a href="index.html" class="logo">Prof. Dr. Javed Iqbal</a>
+      <div class="nav-right">
+        <a href="index.html" class="nav-link">View Patient Site</a>
+        <button id="logoutBtn" class="btn btn-outline btn-nav hidden">Logout</button>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <!-- LOGIN -->
+    <section id="loginView" class="section">
+      <div class="container login-box">
+        <h1>Admin Login</h1>
+        <p class="muted-note">Enter the admin password to manage appointments.</p>
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" placeholder="Admin password">
+        <button type="button" id="loginBtn" class="btn btn-primary btn-block">Login</button>
+        <p id="loginMsg" class="form-msg" role="status"></p>
+      </div>
+    </section>
+
+    <!-- DASHBOARD -->
+    <section id="dashView" class="section hidden">
+      <div class="container">
+        <div class="dash-head">
+          <h1>Appointments</h1>
+          <div class="filters">
+            <select id="statusFilter">
+              <option value="">All statuses</option>
+              <option value="Pending">Pending</option>
+              <option value="Confirmed">Confirmed</option>
+              <option value="Completed">Completed</option>
+              <option value="Cancelled">Cancelled</option>
+            </select>
+            <button type="button" id="refreshBtn" class="btn btn-outline btn-sm">Refresh</button>
+          </div>
+        </div>
+
+        <div class="stats-grid" id="statsGrid"></div>
+
+        <div class="table-wrap">
+          <table class="appt-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Time</th>
+                <th>Patient</th>
+                <th>Phone</th>
+                <th>Email</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="apptBody">
+              <tr><td colspan="7" class="muted-note">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <p>&copy; Prof. Dr. Javed Iqbal. Admin area.</p>
+    </div>
+  </footer>
+
+  <script>
+    let token = localStorage.getItem('admin_token') || '';
+
+    const loginView = document.getElementById('loginView');
+    const dashView = document.getElementById('dashView');
+    const loginMsg = document.getElementById('loginMsg');
+    const logoutBtn = document.getElementById('logoutBtn');
+
+    function showLogin() {
+      loginView.classList.remove('hidden');
+      dashView.classList.add('hidden');
+      logoutBtn.classList.add('hidden');
+    }
+
+    function showDash() {
+      loginView.classList.add('hidden');
+      dashView.classList.remove('hidden');
+      logoutBtn.classList.remove('hidden');
+      loadDashboard();
+    }
+
+    async function loadDashboard() {
+      await Promise.all([loadStats(), loadAppointments()]);
+    }
+
+    async function loadStats() {
+      try {
+        const res = await fetch('/api/admin/stats', { headers: { Authorization: 'Bearer ' + token } });
+        if (res.status === 401) return handleUnauthorized();
+        const s = await res.json();
+        const cards = [
+          { label: 'Total', value: s.total },
+          { label: 'Pending', value: s.pending },
+          { label: 'Confirmed', value: s.confirmed },
+          { label: "Today's", value: s.today }
+        ];
+        document.getElementById('statsGrid').innerHTML = cards.map((c) =>
+          '<div class="stat-card"><span>' + c.label + '</span><strong>' + c.value + '</strong></div>'
+        ).join('');
+      } catch (e) { /* ignore */ }
+    }
+
+    async function loadAppointments() {
+      const tbody = document.getElementById('apptBody');
+      const filter = document.getElementById('statusFilter').value;
+      try {
+        const res = await fetch('/api/admin/appointments', { headers: { Authorization: 'Bearer ' + token } });
+        if (res.status === 401) return handleUnauthorized();
+        const data = await res.json();
+        let rows = data.appointments;
+        if (filter) rows = rows.filter((a) => a.status === filter);
+
+        if (!rows.length) {
+          tbody.innerHTML = '<tr><td colspan="7" class="muted-note">No appointments found.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = rows.map((a) => {
+          const time12 = to12(a.time);
+          return '<tr>' +
+            '<td>' + a.date + '</td>' +
+            '<td>' + time12 + '</td>' +
+            '<td>' + esc(a.name) + '</td>' +
+            '<td>' + esc(a.phone) + '</td>' +
+            '<td>' + esc(a.email) + '</td>' +
+            '<td>' +
+              '<select class="status-select status-' + a.status.toLowerCase() + '" data-id="' + a.id + '">' +
+                ['Pending', 'Confirmed', 'Completed', 'Cancelled'].map((s) =>
+                  '<option value="' + s + '"' + (s === a.status ? ' selected' : '') + '>' + s + '</option>'
+                ).join('') +
+              '</select>' +
+            '</td>' +
+            '<td><button class="btn btn-sm btn-danger" data-del="' + a.id + '">Delete</button></td>' +
+          '</tr>';
+        }).join('');
+
+        tbody.querySelectorAll('.status-select').forEach((sel) => {
+          sel.addEventListener('change', () => updateStatus(sel));
+        });
+        tbody.querySelectorAll('[data-del]').forEach((btn) => {
+          btn.addEventListener('click', () => deleteAppt(btn));
+        });
+      } catch (e) {
+        tbody.innerHTML = '<tr><td colspan="7" class="muted-note">Could not load appointments.</td></tr>';
+      }
+    }
+
+    async function updateStatus(sel) {
+      const id = sel.dataset.id;
+      await fetch('/api/admin/appointments/' + id, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+        body: JSON.stringify({ status: sel.value })
+      });
+      loadDashboard();
+    }
+
+    async function deleteAppt(btn) {
+      if (!confirm('Delete this appointment permanently?')) return;
+      await fetch('/api/admin/appointments/' + btn.dataset.del, {
+        method: 'DELETE',
+        headers: { Authorization: 'Bearer ' + token }
+      });
+      loadDashboard();
+    }
+
+    function handleUnauthorized() {
+      localStorage.removeItem('admin_token');
+      token = '';
+      showLogin();
+    }
+
+    function to12(t) {
+      const [h, m] = (t || '00:00').split(':').map(Number);
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      const hr = h % 12 || 12;
+      return hr + ':' + String(m).padStart(2, '0') + ' ' + ampm;
+    }
+
+    function esc(s) {
+      const div = document.createElement('div');
+      div.textContent = s == null ? '' : s;
+      return div.innerHTML;
+    }
+
+    document.getElementById('loginBtn').addEventListener('click', async () => {
+      const password = document.getElementById('password').value;
+      loginMsg.textContent = 'Logging in...';
+      loginMsg.className = 'form-msg';
+      try {
+        const res = await fetch('/api/admin/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          loginMsg.textContent = data.error || 'Login failed.';
+          loginMsg.className = 'form-msg error';
+          return;
+        }
+        token = data.token;
+        localStorage.setItem('admin_token', token);
+        document.getElementById('password').value = '';
+        showDash();
+      } catch (e) {
+        loginMsg.textContent = 'Network error.';
+        loginMsg.className = 'form-msg error';
+      }
+    });
+
+    logoutBtn.addEventListener('click', () => {
+      localStorage.removeItem('admin_token');
+      token = '';
+      showLogin();
+    });
+
+    document.getElementById('statusFilter').addEventListener('change', loadAppointments);
+    document.getElementById('refreshBtn').addEventListener('click', loadDashboard);
+
+    if (token) showDash();
+    else showLogin();
+  </script>
+</body>
+</html>
