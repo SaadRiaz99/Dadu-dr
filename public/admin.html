@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin | Prof. Dr. Javed Iqbal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -58,12 +61,14 @@
                 <th>Patient</th>
                 <th>Phone</th>
                 <th>Email</th>
+                <th>Service</th>
+                <th>Charge</th>
                 <th>Status</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody id="apptBody">
-              <tr><td colspan="7" class="muted-note">Loading...</td></tr>
+              <tr><td colspan="9" class="muted-note">Loading...</td></tr>
             </tbody>
           </table>
         </div>
@@ -130,7 +135,7 @@
         if (filter) rows = rows.filter((a) => a.status === filter);
 
         if (!rows.length) {
-          tbody.innerHTML = '<tr><td colspan="7" class="muted-note">No appointments found.</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="9" class="muted-note">No appointments found.</td></tr>';
           return;
         }
 
@@ -142,6 +147,8 @@
             '<td>' + esc(a.name) + '</td>' +
             '<td>' + esc(a.phone) + '</td>' +
             '<td>' + esc(a.email) + '</td>' +
+            '<td>' + esc(a.service || 'ENT Consultation') + '</td>' +
+            '<td>' + esc(a.charge || '—') + '</td>' +
             '<td>' +
               '<select class="status-select status-' + a.status.toLowerCase() + '" data-id="' + a.id + '">' +
                 ['Pending', 'Confirmed', 'Completed', 'Cancelled'].map((s) =>

@@ -1,11 +1,11 @@
 const express = require('express');
 const path = require('path');
-const fs = require('fs');
 const crypto = require('crypto');
+const storage = require('./storage');
+const notifications = require('./notifications');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const DATA_FILE = path.join(__dirname, 'data.json');
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
 const TOKENS = new Map();
 
@@ -13,26 +13,6 @@ const STATIC_DIR = path.join(__dirname, 'public');
 
 app.use(express.json());
 app.use(express.static(STATIC_DIR));
-
-/* ---------- tiny JSON storage (atomic writes) ---------- */
-function loadData() {
-  try {
-    if (fs.existsSync(DATA_FILE)) {
-      return JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
-    }
-  } catch (e) {
-    console.error('Failed to read data.json:', e.message);
-  }
-  return { appointments: [], seq: 1 };
-}
-
-function saveData(data) {
-  const tmp = DATA_FILE + '.tmp';
-  fs.writeFileSync(tmp, JSON.stringify(data, null, 2));
-  fs.renameSync(tmp, DATA_FILE);
-}
-
-let db = loadData();
 
 /* ---------- appointment slots ---------- */
 function slotsForDate(dateStr) {
@@ -54,18 +34,35 @@ function dateInPast(dateStr) {
   return d < today;
 }
 
-function bookedTimes(date) {
-  return db.appointments
-    .filter((a) => a.date === date && a.status !== 'Cancelled')
-    .map((a) => a.time);
+function appointmentDate(dateStr, timeStr) {
+  return new Date(dateStr + 'T' + (timeStr || '00:00') + ':00');
 }
+
+function hoursUntil(dateStr, timeStr) {
+  return (appointmentDate(dateStr, timeStr) - new Date()) / 3600000;
+}
+
+const AUTO_CONFIRM_HOURS = 6;
+const AUTO_CONFIRM_INTERVAL = Number(process.env.AUTO_CONFIRM_INTERVAL_MS) || 5 * 60 * 1000;
+
+const SERVICES = {
+  'ENT Consultation': '',
+  'Career Counseling': 'Rs 1,200 / hour'
+};
 
 function makeRef() {
   return 'APT-' + Date.now().toString(36).toUpperCase().slice(-6) + crypto.randomBytes(2).toString('hex').toUpperCase();
 }
 
+async function bookedTimes(date) {
+  const appts = await storage.list();
+  return appts
+    .filter((a) => a.date === date && a.status !== 'Cancelled')
+    .map((a) => a.time);
+}
+
 /* ---------- API: slots ---------- */
-app.get('/api/slots', (req, res) => {
+app.get('/api/slots', async (req, res) => {
   const date = req.query.date || '';
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     return res.status(400).json({ error: 'Invalid date' });
@@ -77,13 +74,13 @@ app.get('/api/slots', (req, res) => {
   if (all.length === 0) {
     return res.json({ date, available: [], closed: true });
   }
-  const booked = bookedTimes(date);
+  const booked = await bookedTimes(date);
   res.json({ date, available: all.filter((t) => !booked.includes(t)) });
 });
 
 /* ---------- API: create appointment ---------- */
-app.post('/api/appointments', (req, res) => {
-  const { name, phone, email, date, time, message } = req.body || {};
+app.post('/api/appointments', async (req, res) => {
+  const { name, phone, email, date, time, message, service } = req.body || {};
 
   if (!name || !String(name).trim()) return res.status(400).json({ error: 'Name is required' });
   if (!phone || !String(phone).trim()) return res.status(400).json({ error: 'Phone is required' });
@@ -93,31 +90,36 @@ app.post('/api/appointments', (req, res) => {
 
   const all = slotsForDate(date);
   if (all.length === 0) return res.status(400).json({ error: 'Clinic is closed on that day' });
-  const available = all.filter((t) => !bookedTimes(date).includes(t));
+  const booked = await bookedTimes(date);
+  const available = all.filter((t) => !booked.includes(t));
   if (!available.includes(time)) return res.status(409).json({ error: 'That time was just taken — pick another slot' });
 
-  const appointment = {
-    id: db.seq++,
+  const serviceName = SERVICES[service] ? service : 'ENT Consultation';
+  const charge = SERVICES[serviceName];
+
+  const autoConfirm = hoursUntil(date, time) <= AUTO_CONFIRM_HOURS;
+  const appointment = await storage.create({
     ref: makeRef(),
     name: String(name).trim(),
     phone: String(phone).trim(),
     email: String(email).trim(),
     doctor: 'Prof. Dr. Javed Iqbal',
+    service: serviceName,
+    charge,
     date,
     time,
     message: (message || '').trim(),
-    status: 'Pending',
-    created_at: new Date().toISOString()
-  };
+    status: autoConfirm ? 'Confirmed' : 'Pending'
+  });
 
-  db.appointments.push(appointment);
-  saveData(db);
+  if (autoConfirm) notifications.notifyConfirmed(appointment);
+  notifications.notifyNewAppointment(appointment);
   res.json({ success: true, appointment });
 });
 
 /* ---------- API: public lookup by reference ---------- */
-app.get('/api/appointments/:ref', (req, res) => {
-  const a = db.appointments.find((x) => x.ref === String(req.params.ref));
+app.get('/api/appointments/:ref', async (req, res) => {
+  const a = await storage.getByRef(String(req.params.ref));
   if (!a) return res.status(404).json({ error: 'Appointment not found' });
   res.json({ appointment: a });
 });
@@ -142,46 +144,59 @@ function requireAdmin(req, res, next) {
 }
 
 /* ---------- API: admin appointments ---------- */
-app.get('/api/admin/appointments', requireAdmin, (req, res) => {
-  res.json({ appointments: db.appointments.slice().reverse() });
+app.get('/api/admin/appointments', requireAdmin, async (req, res) => {
+  res.json({ appointments: await storage.list() });
 });
 
-app.get('/api/admin/stats', requireAdmin, (req, res) => {
-  const today = new Date();
-  const todayStr = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
-  const a = db.appointments;
-  res.json({
-    total: a.length,
-    pending: a.filter((x) => x.status === 'Pending').length,
-    confirmed: a.filter((x) => x.status === 'Confirmed').length,
-    today: a.filter((x) => x.date === todayStr && x.status !== 'Cancelled').length
-  });
+app.get('/api/admin/stats', requireAdmin, async (req, res) => {
+  res.json(await storage.stats());
 });
 
-app.patch('/api/admin/appointments/:id', requireAdmin, (req, res) => {
-  const id = Number(req.params.id);
+app.patch('/api/admin/appointments/:id', requireAdmin, async (req, res) => {
   const { status } = req.body || {};
   if (!['Pending', 'Confirmed', 'Completed', 'Cancelled'].includes(status)) {
     return res.status(400).json({ error: 'Invalid status' });
   }
-  const a = db.appointments.find((x) => x.id === id);
+  const a = await storage.updateStatus(Number(req.params.id), status);
   if (!a) return res.status(404).json({ error: 'Appointment not found' });
-  a.status = status;
-  saveData(db);
   res.json({ success: true, appointment: a });
 });
 
-app.delete('/api/admin/appointments/:id', requireAdmin, (req, res) => {
-  const id = Number(req.params.id);
-  db.appointments = db.appointments.filter((x) => x.id !== id);
-  saveData(db);
+app.delete('/api/admin/appointments/:id', requireAdmin, async (req, res) => {
+  await storage.remove(Number(req.params.id));
   res.json({ success: true });
 });
 
 /* ---------- pages ---------- */
 app.get('/admin', (req, res) => res.sendFile(path.join(STATIC_DIR, 'admin.html')));
 
-app.listen(PORT, () => {
-  console.log('Doctor site running on http://localhost:' + PORT);
-  console.log('Change the admin password with the ADMIN_PASSWORD environment variable.');
+/* ---------- auto-confirm soon appointments ---------- */
+async function autoConfirmSoon() {
+  try {
+    const all = await storage.list();
+    for (const a of all) {
+      if (a.status !== 'Pending') continue;
+      const h = hoursUntil(a.date, a.time);
+      if (h < 0 || h > AUTO_CONFIRM_HOURS) continue;
+      const updated = await storage.updateStatus(a.id, 'Confirmed');
+      if (updated) {
+        console.log('[auto-confirm] ' + a.ref + ' confirmed (' + h.toFixed(1) + 'h before)');
+        notifications.notifyConfirmed(updated);
+      }
+    }
+  } catch (e) {
+    console.error('[auto-confirm] job failed:', e.message);
+  }
+}
+
+/* ---------- boot ---------- */
+storage.init().then(({ mode }) => {
+  app.listen(PORT, () => {
+    console.log('Doctor site running on http://localhost:' + PORT + ' (storage: ' + mode + ')');
+    console.log('Change the admin password with the ADMIN_PASSWORD environment variable.');
+    console.log('Notifications: set TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID (free) or Twilio env vars for SMS.');
+    console.log('Appointments within ' + AUTO_CONFIRM_HOURS + 'h are auto-confirmed; job runs every ' + (AUTO_CONFIRM_INTERVAL / 60000) + ' min.');
+  });
+  autoConfirmSoon();
+  setInterval(autoConfirmSoon, AUTO_CONFIRM_INTERVAL);
 });

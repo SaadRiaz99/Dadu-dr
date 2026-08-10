@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Appointment Confirmed | Prof. Dr. Javed Iqbal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -32,6 +35,14 @@
           <div class="success-row">
             <span>Doctor</span>
             <strong>Prof. Dr. Javed Iqbal</strong>
+          </div>
+          <div class="success-row">
+            <span>Service</span>
+            <strong id="rService"></strong>
+          </div>
+          <div class="success-row">
+            <span>Charge</span>
+            <strong id="rCharge"></strong>
           </div>
           <div class="success-row">
             <span>Date</span>
@@ -85,6 +96,8 @@
           const a = data.appointment;
           document.getElementById('pName').textContent = a.name;
           document.getElementById('rRef').textContent = a.ref;
+          document.getElementById('rService').textContent = a.service || 'ENT Consultation';
+          document.getElementById('rCharge').textContent = a.charge || '—';
           document.getElementById('rDate').textContent = niceDate(a.date);
           document.getElementById('rTime').textContent = to12(a.time);
           document.getElementById('rPhone').textContent = a.phone;

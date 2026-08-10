@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Book an Appointment | Prof. Dr. Javed Iqbal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -76,6 +79,12 @@
         <!-- STEP 2 -->
         <div class="panel step-panel hidden" id="panel2">
           <h2>Tell us about yourself</h2>
+          <label class="field-label" for="service">Type of visit</label>
+          <select id="service" name="service" class="field">
+            <option value="ENT Consultation">ENT Consultation</option>
+            <option value="Career Counseling">Career Counseling — Rs 1,200 / hour</option>
+          </select>
+          <p class="charge-note hidden" id="chargeNote">Career counseling is charged at <strong>Rs 1,200 per hour</strong>.</p>
           <label class="field-label" for="name">Full name</label>
           <input type="text" id="name" name="name" class="field" placeholder="e.g. Ahmed Khan">
           <label class="field-label" for="phone">Phone number</label>
@@ -97,6 +106,14 @@
             <div class="review-row">
               <span class="review-label">Doctor</span>
               <span class="review-value">Prof. Dr. Javed Iqbal</span>
+            </div>
+            <div class="review-row">
+              <span class="review-label">Service</span>
+              <span class="review-value" id="rvService">—</span>
+            </div>
+            <div class="review-row">
+              <span class="review-label">Charge</span>
+              <span class="review-value" id="rvCharge">—</span>
             </div>
             <div class="review-row">
               <span class="review-label">Date</span>
@@ -148,6 +165,10 @@
             <li>
               <span class="sum-label">Patient</span>
               <span class="sum-value" id="sumName">—</span>
+            </li>
+            <li>
+              <span class="sum-label">Service</span>
+              <span class="sum-value" id="sumService">ENT Consultation</span>
             </li>
           </ul>
           <div class="summary-foot">
@@ -245,14 +266,24 @@
       document.getElementById(id).addEventListener('input', updateSummary);
     });
 
+    const serviceSel = document.getElementById('service');
+    serviceSel.addEventListener('change', () => {
+      document.getElementById('chargeNote').classList.toggle('hidden', serviceSel.value !== 'Career Counseling');
+      updateSummary();
+    });
+
     function updateSummary() {
       document.getElementById('sumDate').textContent = state.date ? niceDate(state.date) : 'Not selected';
       document.getElementById('sumTime').textContent = state.time ? to12(state.time) : 'Not selected';
       document.getElementById('sumName').textContent = document.getElementById('name').value.trim() || '—';
+      document.getElementById('sumService').textContent = serviceSel.value;
     }
 
     /* ---------- review ---------- */
     function fillReview() {
+      const isCC = serviceSel.value === 'Career Counseling';
+      document.getElementById('rvService').textContent = serviceSel.value;
+      document.getElementById('rvCharge').textContent = isCC ? 'Rs 1,200 / hour' : '—';
       document.getElementById('rvDate').textContent = niceDate(state.date);
       document.getElementById('rvTime').textContent = to12(state.time);
       document.getElementById('rvName').textContent = document.getElementById('name').value.trim();
@@ -267,6 +298,7 @@
       const phone = document.getElementById('phone').value.trim();
       const email = document.getElementById('email').value.trim();
       const message = document.getElementById('message').value.trim();
+      const service = serviceSel.value;
 
       if (!name || !phone || !email) {
         msg.textContent = 'Please fill in your name, phone and email.';
@@ -288,7 +320,7 @@
         const res = await fetch('/api/appointments', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, phone, email, date: state.date, time: state.time, message })
+          body: JSON.stringify({ name, phone, email, date: state.date, time: state.time, message, service })
         });
         const data = await res.json();
         if (!res.ok) {
