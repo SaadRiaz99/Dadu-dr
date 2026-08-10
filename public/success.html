@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Appointment Confirmed | Prof. Dr. Javed Iqbal</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav container">
+      <a href="index.html" class="logo">Prof. Dr. Javed Iqbal</a>
+      <ul class="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="book.html" class="btn btn-primary btn-nav">Book Another</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+    <section class="section success-section">
+      <div class="container success-box">
+        <div class="success-icon">&#10003;</div>
+        <h1>Appointment Requested!</h1>
+        <p class="success-sub">Thank you, <strong id="pName"></strong>. Your appointment has been submitted to the clinic.</p>
+
+        <div class="success-card">
+          <div class="success-row">
+            <span>Reference</span>
+            <strong id="rRef"></strong>
+          </div>
+          <div class="success-row">
+            <span>Doctor</span>
+            <strong>Prof. Dr. Javed Iqbal</strong>
+          </div>
+          <div class="success-row">
+            <span>Date</span>
+            <strong id="rDate"></strong>
+          </div>
+          <div class="success-row">
+            <span>Time</span>
+            <strong id="rTime"></strong>
+          </div>
+          <div class="success-row">
+            <span>Status</span>
+            <strong><span class="status-pill status-pending">Pending confirmation</span></strong>
+          </div>
+        </div>
+
+        <p class="muted-note">We will call you at <strong id="rPhone"></strong> to confirm your visit. Keep this reference number handy.</p>
+        <div class="hero-actions success-actions">
+          <a href="index.html" class="btn btn-primary">Back to Home</a>
+          <a href="book.html" class="btn btn-outline">Book Another Visit</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <p>&copy; Prof. Dr. Javed Iqbal. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script>
+    function to12(t) {
+      const [h, m] = t.split(':').map(Number);
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      const hr = h % 12 || 12;
+      return hr + ':' + String(m).padStart(2, '0') + ' ' + ampm;
+    }
+
+    function niceDate(d) {
+      const dt = new Date(d + 'T00:00:00');
+      return dt.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    }
+
+    const ref = new URLSearchParams(window.location.search).get('ref');
+    async function load() {
+      if (!ref) return;
+      try {
+        const res = await fetch('/api/appointments/' + ref);
+        const data = await res.json();
+        if (data.appointment) {
+          const a = data.appointment;
+          document.getElementById('pName').textContent = a.name;
+          document.getElementById('rRef').textContent = a.ref;
+          document.getElementById('rDate').textContent = niceDate(a.date);
+          document.getElementById('rTime').textContent = to12(a.time);
+          document.getElementById('rPhone').textContent = a.phone;
+        }
+      } catch (e) { /* keep static text */ }
+    }
+    load();
+  </script>
+</body>
+</html>
