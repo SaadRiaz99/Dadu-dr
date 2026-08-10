@@ -21,53 +21,141 @@
   </header>
 
   <main>
-    <section class="page-head">
+    <section class="page-head booking-head">
       <div class="container">
-        <h1>Book an Appointment</h1>
-        <p>Select a date and available time, then fill in your details.</p>
+        <span class="badge">Online Booking</span>
+        <h1>Book your visit in 3 easy steps</h1>
+        <p>Pick a time, share your details, and confirm — it takes less than a minute.</p>
       </div>
     </section>
 
-    <section class="section">
+    <!-- STEPPER -->
+    <div class="container">
+      <ol class="stepper" id="stepper">
+        <li class="step active" data-step="1">
+          <span class="step-num">1</span>
+          <div class="step-label">
+            <span class="step-title">Date &amp; Time</span>
+            <span class="step-sub">Choose a slot</span>
+          </div>
+        </li>
+        <li class="step" data-step="2">
+          <span class="step-num">2</span>
+          <div class="step-label">
+            <span class="step-title">Your Details</span>
+            <span class="step-sub">Contact info</span>
+          </div>
+        </li>
+        <li class="step" data-step="3">
+          <span class="step-num">3</span>
+          <div class="step-label">
+            <span class="step-title">Review &amp; Confirm</span>
+            <span class="step-sub">Final check</span>
+          </div>
+        </li>
+      </ol>
+    </div>
+
+    <section class="section booking-section">
       <div class="container booking-grid">
-        <div class="contact-form">
-          <h3>Appointment details</h3>
 
-          <label for="name">Full name</label>
-          <input type="text" id="name" name="name" placeholder="e.g. Ahmed Khan" required>
-
-          <label for="phone">Phone number</label>
-          <input type="tel" id="phone" name="phone" placeholder="e.g. 0300 1234567" required>
-
-          <label for="email">Email</label>
-          <input type="email" id="email" name="email" placeholder="e.g. ahmed@email.com" required>
-
-          <label for="date">Preferred date</label>
-          <input type="date" id="date" name="date" required>
-
+        <!-- STEP 1 -->
+        <div class="panel step-panel" id="panel1">
+          <h2>When would you like to come?</h2>
+          <label class="field-label" for="date">Pick a date</label>
+          <input type="date" id="date" name="date" class="field date-field">
           <div class="slot-wrap">
-            <label>Available times</label>
+            <label class="field-label">Available times</label>
             <div id="slots" class="slot-grid">
-              <p class="slot-hint">Pick a date above to see available times.</p>
+              <p class="slot-hint">Select a date to see open time slots.</p>
             </div>
           </div>
-
-          <label for="message">Message (optional)</label>
-          <textarea id="message" name="message" rows="3" placeholder="Tell us about your problem"></textarea>
-
-          <button type="button" id="submitBtn" class="btn btn-primary btn-block">Confirm Booking</button>
-          <p id="formMsg" class="form-msg" role="status"></p>
+          <button type="button" class="btn btn-primary btn-next" id="toStep2" disabled>Continue <span class="arrow">&rarr;</span></button>
         </div>
 
-        <aside class="booking-side">
-          <h3>Clinic hours</h3>
-          <ul class="contact-list">
-            <li><strong>Monday – Friday:</strong> [9:00 AM – 5:00 PM]</li>
-            <li><strong>Saturday:</strong> [9:00 AM – 1:00 PM]</li>
-            <li><strong>Sunday:</strong> Closed</li>
+        <!-- STEP 2 -->
+        <div class="panel step-panel hidden" id="panel2">
+          <h2>Tell us about yourself</h2>
+          <label class="field-label" for="name">Full name</label>
+          <input type="text" id="name" name="name" class="field" placeholder="e.g. Ahmed Khan">
+          <label class="field-label" for="phone">Phone number</label>
+          <input type="tel" id="phone" name="phone" class="field" placeholder="e.g. 0300 1234567">
+          <label class="field-label" for="email">Email</label>
+          <input type="email" id="email" name="email" class="field" placeholder="e.g. ahmed@email.com">
+          <label class="field-label" for="message">Why are you visiting? (optional)</label>
+          <textarea id="message" name="message" rows="3" class="field" placeholder="Briefly describe your problem"></textarea>
+          <div class="btn-row">
+            <button type="button" class="btn btn-ghost btn-back" id="backTo1">&larr; Back</button>
+            <button type="button" class="btn btn-primary btn-next" id="toStep3">Review Booking <span class="arrow">&rarr;</span></button>
+          </div>
+        </div>
+
+        <!-- STEP 3 -->
+        <div class="panel step-panel hidden" id="panel3">
+          <h2>Confirm your appointment</h2>
+          <div class="review-card">
+            <div class="review-row">
+              <span class="review-label">Doctor</span>
+              <span class="review-value">Prof. Dr. Javed Iqbal</span>
+            </div>
+            <div class="review-row">
+              <span class="review-label">Date</span>
+              <span class="review-value" id="rvDate">—</span>
+            </div>
+            <div class="review-row">
+              <span class="review-label">Time</span>
+              <span class="review-value" id="rvTime">—</span>
+            </div>
+            <div class="review-row">
+              <span class="review-label">Name</span>
+              <span class="review-value" id="rvName">—</span>
+            </div>
+            <div class="review-row">
+              <span class="review-label">Phone</span>
+              <span class="review-value" id="rvPhone">—</span>
+            </div>
+            <div class="review-row">
+              <span class="review-label">Email</span>
+              <span class="review-value" id="rvEmail">—</span>
+            </div>
+          </div>
+          <p id="formMsg" class="form-msg" role="status"></p>
+          <div class="btn-row">
+            <button type="button" class="btn btn-ghost btn-back" id="backTo2">&larr; Back</button>
+            <button type="button" class="btn btn-primary btn-submit" id="submitBtn">Confirm Booking</button>
+          </div>
+        </div>
+
+        <!-- LIVE SUMMARY -->
+        <aside class="booking-side summary-panel">
+          <span class="summary-chip">Your visit</span>
+          <div class="summary-doctor">
+            <div class="summary-avatar">JI</div>
+            <div>
+              <strong>Prof. Dr. Javed Iqbal</strong>
+              <span>ENT Specialist · Lahore</span>
+            </div>
+          </div>
+          <ul class="summary-list">
+            <li>
+              <span class="sum-label">Date</span>
+              <span class="sum-value" id="sumDate">Not selected</span>
+            </li>
+            <li>
+              <span class="sum-label">Time</span>
+              <span class="sum-value" id="sumTime">Not selected</span>
+            </li>
+            <li>
+              <span class="sum-label">Patient</span>
+              <span class="sum-value" id="sumName">—</span>
+            </li>
           </ul>
-          <p class="muted-note">Need urgent care? Call [+00 000 000 000].</p>
+          <div class="summary-foot">
+            <span class="status-pill status-pending">Pending confirmation</span>
+          </div>
+          <p class="muted-note">The clinic will call to confirm your visit.</p>
         </aside>
+
       </div>
     </section>
   </main>
@@ -79,19 +167,44 @@
   </footer>
 
   <script>
+    const state = { date: '', time: '', slots: [] };
+
     const dateInput = document.getElementById('date');
     const slotsBox = document.getElementById('slots');
     const msg = document.getElementById('formMsg');
-    let selectedTime = '';
+    const btnStep2 = document.getElementById('toStep2');
 
     dateInput.min = new Date().toISOString().split('T')[0];
 
+    /* ---------- stepper ---------- */
+    function goTo(step) {
+      for (let i = 1; i <= 3; i++) {
+        document.getElementById('panel' + i).classList.toggle('hidden', i !== step);
+        document.querySelector('.step[data-step="' + i + '"]').classList.toggle('active', i === step);
+        document.querySelector('.step[data-step="' + i + '"]').classList.toggle('done', i < step);
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      if (step === 3) fillReview();
+    }
+
+    document.getElementById('toStep2').addEventListener('click', () => goTo(2));
+    document.getElementById('backTo1').addEventListener('click', () => goTo(1));
+    document.getElementById('toStep3').addEventListener('click', () => goTo(3));
+    document.getElementById('backTo2').addEventListener('click', () => goTo(2));
+
+    /* ---------- slots ---------- */
     dateInput.addEventListener('change', loadSlots);
 
     async function loadSlots() {
-      selectedTime = '';
+      state.time = '';
+      btnStep2.disabled = true;
       const date = dateInput.value;
-      if (!date) return;
+      state.date = date;
+      updateSummary();
+      if (!date) {
+        slotsBox.innerHTML = '<p class="slot-hint">Select a date to see open time slots.</p>';
+        return;
+      }
       slotsBox.innerHTML = '<p class="slot-hint">Loading available times...</p>';
       try {
         const res = await fetch('/api/slots?date=' + date);
@@ -104,17 +217,14 @@
           slotsBox.innerHTML = '<p class="slot-hint">All times are booked for this date. Please pick another day.</p>';
           return;
         }
+        state.slots = data.available;
         slotsBox.innerHTML = '';
         data.available.forEach((t) => {
           const btn = document.createElement('button');
           btn.type = 'button';
           btn.className = 'slot-btn';
           btn.textContent = to12(t);
-          btn.onclick = () => {
-            selectedTime = t;
-            document.querySelectorAll('.slot-btn').forEach((b) => b.classList.remove('active'));
-            btn.classList.add('active');
-          };
+          btn.onclick = () => selectSlot(t, btn);
           slotsBox.appendChild(btn);
         });
       } catch (e) {
@@ -122,6 +232,86 @@
       }
     }
 
+    function selectSlot(t, btn) {
+      state.time = t;
+      document.querySelectorAll('.slot-btn').forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      btnStep2.disabled = false;
+      updateSummary();
+    }
+
+    /* ---------- live summary ---------- */
+    ['name', 'phone', 'email'].forEach((id) => {
+      document.getElementById(id).addEventListener('input', updateSummary);
+    });
+
+    function updateSummary() {
+      document.getElementById('sumDate').textContent = state.date ? niceDate(state.date) : 'Not selected';
+      document.getElementById('sumTime').textContent = state.time ? to12(state.time) : 'Not selected';
+      document.getElementById('sumName').textContent = document.getElementById('name').value.trim() || '—';
+    }
+
+    /* ---------- review ---------- */
+    function fillReview() {
+      document.getElementById('rvDate').textContent = niceDate(state.date);
+      document.getElementById('rvTime').textContent = to12(state.time);
+      document.getElementById('rvName').textContent = document.getElementById('name').value.trim();
+      document.getElementById('rvPhone').textContent = document.getElementById('phone').value.trim();
+      document.getElementById('rvEmail').textContent = document.getElementById('email').value.trim();
+    }
+
+    document.getElementById('submitBtn').addEventListener('click', async () => {
+      msg.textContent = '';
+      msg.className = 'form-msg';
+      const name = document.getElementById('name').value.trim();
+      const phone = document.getElementById('phone').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const message = document.getElementById('message').value.trim();
+
+      if (!name || !phone || !email) {
+        msg.textContent = 'Please fill in your name, phone and email.';
+        msg.className = 'form-msg error';
+        goTo(2);
+        return;
+      }
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+        msg.textContent = 'Please enter a valid email address.';
+        msg.className = 'form-msg error';
+        goTo(2);
+        return;
+      }
+
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = true;
+      btn.textContent = 'Booking...';
+      try {
+        const res = await fetch('/api/appointments', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, phone, email, date: state.date, time: state.time, message })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          msg.textContent = data.error || 'Something went wrong.';
+          msg.className = 'form-msg error';
+          btn.disabled = false;
+          btn.textContent = 'Confirm Booking';
+          if (res.status === 409) {
+            goTo(1);
+            loadSlots();
+          }
+          return;
+        }
+        window.location.href = 'success.html?ref=' + data.appointment.ref;
+      } catch (e) {
+        msg.textContent = 'Network error. Please try again.';
+        msg.className = 'form-msg error';
+        btn.disabled = false;
+        btn.textContent = 'Confirm Booking';
+      }
+    });
+
+    /* ---------- helpers ---------- */
     function to12(t) {
       const [h, m] = t.split(':').map(Number);
       const ampm = h >= 12 ? 'PM' : 'AM';
@@ -129,52 +319,10 @@
       return hr + ':' + String(m).padStart(2, '0') + ' ' + ampm;
     }
 
-    document.getElementById('submitBtn').addEventListener('click', async () => {
-      msg.textContent = '';
-      const name = document.getElementById('name').value.trim();
-      const phone = document.getElementById('phone').value.trim();
-      const email = document.getElementById('email').value.trim();
-      const date = dateInput.value;
-      const message = document.getElementById('message').value.trim();
-
-      if (!name || !phone || !email) {
-        msg.textContent = 'Please fill in your name, phone and email.';
-        msg.className = 'form-msg error';
-        return;
-      }
-      if (!date) {
-        msg.textContent = 'Please pick a date.';
-        msg.className = 'form-msg error';
-        return;
-      }
-      if (!selectedTime) {
-        msg.textContent = 'Please pick an available time.';
-        msg.className = 'form-msg error';
-        return;
-      }
-
-      msg.textContent = 'Booking...';
-      msg.className = 'form-msg';
-
-      try {
-        const res = await fetch('/api/appointments', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, phone, email, date, time: selectedTime, message })
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          msg.textContent = data.error || 'Something went wrong.';
-          msg.className = 'form-msg error';
-          if (res.status === 409) loadSlots();
-          return;
-        }
-        window.location.href = 'success.html?ref=' + data.appointment.ref;
-      } catch (e) {
-        msg.textContent = 'Network error. Please try again.';
-        msg.className = 'form-msg error';
-      }
-    });
+    function niceDate(d) {
+      const dt = new Date(d + 'T00:00:00');
+      return dt.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+    }
   </script>
 </body>
 </html>
