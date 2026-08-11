@@ -3,6 +3,7 @@ services:
     name: doctor-site
     runtime: node
     plan: free
+    region: oregon
     buildCommand: npm install
     startCommand: npm start
     healthCheckPath: /
@@ -10,7 +11,9 @@ services:
       - key: ADMIN_PASSWORD
         sync: false
       - key: DATABASE_URL
-        sync: false
+        fromDatabase:
+          name: doctor-db
+          property: connectionString
       - key: TWILIO_ACCOUNT_SID
         sync: false
       - key: TWILIO_AUTH_TOKEN
@@ -19,3 +22,8 @@ services:
         sync: false
       - key: NOTIFY_TO
         sync: false
+
+databases:
+  - name: doctor-db
+    plan: free
+    region: oregon

@@ -27,6 +27,12 @@
         <h1>Appointment Requested!</h1>
         <p class="success-sub">Thank you, <strong id="pName"></strong>. Your appointment has been submitted to the clinic.</p>
 
+        <div class="token-box">
+          <span class="token-label">Your number for this day</span>
+          <strong class="token-num" id="rToken">#1</strong>
+          <span class="token-hint">The clinic calls patients in order of this number.</span>
+        </div>
+
         <div class="success-card">
           <div class="success-row">
             <span>Reference</span>
@@ -43,6 +49,10 @@
           <div class="success-row">
             <span>Charge</span>
             <strong id="rCharge"></strong>
+          </div>
+          <div class="success-row">
+            <span>Payment method</span>
+            <strong id="rPay"></strong>
           </div>
           <div class="success-row">
             <span>Date</span>
@@ -99,6 +109,8 @@
           document.getElementById('rRef').textContent = a.ref;
           document.getElementById('rService').textContent = a.service || 'ENT Consultation';
           document.getElementById('rCharge').textContent = a.charge || '—';
+          document.getElementById('rPay').textContent = a.payment_method || 'Cash at Clinic';
+          document.getElementById('rToken').textContent = '#' + (a.serial || '—');
           document.getElementById('rDate').textContent = niceDate(a.date);
           document.getElementById('rTime').textContent = to12(a.time);
           document.getElementById('rPhone').textContent = a.phone;

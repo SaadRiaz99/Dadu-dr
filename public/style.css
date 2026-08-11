@@ -1199,6 +1199,16 @@ textarea.field {
   box-shadow: 0 0 0 4px rgba(15, 125, 143, 0.12);
 }
 
+.login-box .btn {
+  font-size: 1.1rem;
+  padding: 0.95rem 1.5rem;
+}
+
+.login-box input {
+  font-size: 1.1rem;
+  padding: 0.85rem 0.95rem;
+}
+
 .dash-head {
   display: flex;
   align-items: center;
@@ -1312,6 +1322,209 @@ textarea.field {
   font-weight: 600;
   font-family: inherit;
   cursor: pointer;
+}
+
+/* ============ Booking payment methods ============ */
+.pay-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.55rem;
+  margin-top: 0.45rem;
+}
+
+.pay-btn {
+  padding: 0.9rem 0.6rem;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.pay-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+
+.pay-btn.active {
+  background: var(--grad-primary);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 8px 18px rgba(15, 125, 143, 0.32);
+}
+
+/* ============ Admin simple dashboard ============ */
+.admin-dash h1 {
+  font-size: 1.9rem;
+}
+
+.quick-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  margin-bottom: 1.2rem;
+}
+
+.qf-btn {
+  padding: 0.8rem 1.4rem;
+  border-radius: 999px;
+  border: 2px solid var(--border);
+  background: #fff;
+  font-size: 1.05rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.qf-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.qf-btn.qf-active {
+  background: var(--grad-primary);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 8px 18px rgba(15, 125, 143, 0.3);
+}
+
+.list-hint {
+  margin-bottom: 1rem;
+}
+
+.appt-table td {
+  font-size: 1rem;
+  padding: 1rem 1.1rem;
+  vertical-align: top;
+}
+
+.appt-table td strong {
+  display: block;
+  color: var(--text);
+}
+
+.cell-sub {
+  display: block;
+  color: var(--muted);
+  font-size: 0.88rem;
+  margin-top: 0.2rem;
+}
+
+.actions-cell {
+  min-width: 230px;
+}
+
+.row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.row-actions.pay {
+  margin-top: 0.6rem;
+}
+
+.act-btn {
+  padding: 0.7rem 1rem;
+  border-radius: var(--radius-sm);
+  border: none;
+  font-size: 0.98rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  color: #fff;
+  transition: all 0.15s;
+}
+
+.act-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.06);
+}
+
+.act-confirm {
+  background: var(--success);
+}
+
+.act-done {
+  background: #3730a3;
+}
+
+.act-cancel {
+  background: var(--danger);
+}
+
+.act-del {
+  background: transparent;
+  border: 1.5px solid var(--border);
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.pay-btn.is-paid {
+  background: #d1fae5;
+  color: var(--success);
+  border-color: transparent;
+}
+
+.admin-cta {
+  margin-top: 1.2rem;
+}
+
+/* ============ Day queue number ============ */
+.token-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 46px;
+  height: 46px;
+  padding: 0 0.6rem;
+  border-radius: 14px;
+  background: var(--grad-primary);
+  color: #fff;
+  font-size: 1.1rem;
+  font-weight: 800;
+  margin-right: 0.7rem;
+  vertical-align: middle;
+  box-shadow: 0 6px 14px rgba(15, 125, 143, 0.25);
+}
+
+.token-box {
+  background: var(--bg-alt);
+  border: 2px dashed var(--primary);
+  border-radius: 16px;
+  padding: 1.2rem;
+  margin-bottom: 1.4rem;
+}
+
+.token-label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.token-num {
+  display: block;
+  font-size: 3rem;
+  font-weight: 800;
+  color: var(--primary-deep);
+  line-height: 1.1;
+}
+
+.token-hint {
+  display: block;
+  font-size: 0.82rem;
+  color: var(--muted);
+  margin-top: 0.3rem;
 }
 
 /* ============ Footer ============ */

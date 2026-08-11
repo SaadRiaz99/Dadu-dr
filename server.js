@@ -45,10 +45,33 @@ function hoursUntil(dateStr, timeStr) {
 const AUTO_CONFIRM_HOURS = 6;
 const AUTO_CONFIRM_INTERVAL = Number(process.env.AUTO_CONFIRM_INTERVAL_MS) || 5 * 60 * 1000;
 
+const PAYMENT_METHODS = ['Cash at Clinic', 'JazzCash', 'EasyPaisa', 'Bank Transfer'];
+
 const SERVICES = {
   'ENT Consultation': '',
   'Career Counseling': 'Rs 1,200 / hour'
 };
+
+const SERVICE_FEES = {
+  'ENT Consultation': 0,
+  'Career Counseling': 1200
+};
+
+const PAYMENT_ACCOUNTS = {
+  JazzCash: process.env.JAZZCASH_NUMBER || '03XX-XXXXXXX',
+  EasyPaisa: process.env.EASYPAISA_NUMBER || '03XX-XXXXXXX',
+  Bank: process.env.BANK_DETAILS || 'Ask the clinic for bank transfer details.'
+};
+
+function paymentInfo(method) {
+  const map = {
+    'Cash at Clinic': 'Pay in cash when you arrive at the clinic.',
+    'JazzCash': 'Pay via JazzCash to ' + PAYMENT_ACCOUNTS.JazzCash + ' before your visit.',
+    'EasyPaisa': 'Pay via EasyPaisa to ' + PAYMENT_ACCOUNTS.EasyPaisa + ' before your visit.',
+    'Bank Transfer': 'Bank transfer — ' + PAYMENT_ACCOUNTS.Bank + '.'
+  };
+  return map[method] || map['Cash at Clinic'];
+}
 
 function makeRef() {
   return 'APT-' + Date.now().toString(36).toUpperCase().slice(-6) + crypto.randomBytes(2).toString('hex').toUpperCase();
@@ -78,9 +101,22 @@ app.get('/api/slots', async (req, res) => {
   res.json({ date, available: all.filter((t) => !booked.includes(t)) });
 });
 
+/* ---------- API: services & payment info ---------- */
+app.get('/api/services', (req, res) => {
+  res.json({
+    services: Object.keys(SERVICES).map((name) => ({
+      name,
+      charge: SERVICES[name],
+      fee: SERVICE_FEES[name] || 0,
+      paymentMethods: PAYMENT_METHODS,
+      paymentInfo: Object.fromEntries(PAYMENT_METHODS.map((m) => [m, paymentInfo(m)]))
+    }))
+  });
+});
+
 /* ---------- API: create appointment ---------- */
 app.post('/api/appointments', async (req, res) => {
-  const { name, phone, email, date, time, message, service } = req.body || {};
+  const { name, phone, email, date, time, message, service, payment_method } = req.body || {};
 
   if (!name || !String(name).trim()) return res.status(400).json({ error: 'Name is required' });
   if (!phone || !String(phone).trim()) return res.status(400).json({ error: 'Phone is required' });
@@ -94,8 +130,10 @@ app.post('/api/appointments', async (req, res) => {
   const available = all.filter((t) => !booked.includes(t));
   if (!available.includes(time)) return res.status(409).json({ error: 'That time was just taken — pick another slot' });
 
-  const serviceName = SERVICES[service] ? service : 'ENT Consultation';
+  const serviceName = SERVICES[service] !== undefined ? service : 'ENT Consultation';
   const charge = SERVICES[serviceName];
+  const fee = SERVICE_FEES[serviceName] || 0;
+  const method = PAYMENT_METHODS.includes(payment_method) ? payment_method : 'Cash at Clinic';
 
   const autoConfirm = hoursUntil(date, time) <= AUTO_CONFIRM_HOURS;
   const appointment = await storage.create({
@@ -106,6 +144,9 @@ app.post('/api/appointments', async (req, res) => {
     doctor: 'Prof. Dr. Javed Iqbal',
     service: serviceName,
     charge,
+    fee,
+    payment_method: method,
+    payment_status: 'Unpaid',
     date,
     time,
     message: (message || '').trim(),
@@ -170,6 +211,16 @@ app.patch('/api/admin/appointments/:id', requireAdmin, async (req, res) => {
     return res.status(400).json({ error: 'Invalid status' });
   }
   const a = await storage.updateStatus(Number(req.params.id), status);
+  if (!a) return res.status(404).json({ error: 'Appointment not found' });
+  res.json({ success: true, appointment: a });
+});
+
+app.patch('/api/admin/appointments/:id/payment', requireAdmin, async (req, res) => {
+  const { payment_status } = req.body || {};
+  if (!['Paid', 'Unpaid'].includes(payment_status)) {
+    return res.status(400).json({ error: 'Invalid payment status' });
+  }
+  const a = await storage.updatePayment(Number(req.params.id), payment_status);
   if (!a) return res.status(404).json({ error: 'Appointment not found' });
   res.json({ success: true, appointment: a });
 });

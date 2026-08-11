@@ -6,9 +6,11 @@ Patient, booking and admin website for Prof. Dr. Javed Iqbal, an ENT specialist 
 
 - Landing page describing the doctor, services and contact info
 - 3-step online appointment booking with live available time slots
+- Day-by-day queue number system — the first patient of the day gets #1, the next #2, and so on (ordered by time slot)
+- Payment method selection (Cash, JazzCash, EasyPaisa, Bank Transfer) with per-service fees and payment instructions
 - Smart FAQ chatbot that answers clinic questions and guides patients to book
 - Public appointment lookup by reference number
-- Admin dashboard (login + manage appointments) at `/admin`
+- Admin dashboard (login + manage appointments) at `/admin` — simple big-button UI: quick filters (Today / New / Confirmed / Completed), one-tap Confirm / Done / Cancel, and Paid toggling
 - Notifications for new appointments via Twilio SMS
 - Storage in PostgreSQL, or a local `data.json` file when no database is set
 
@@ -28,6 +30,9 @@ Open http://localhost:3000. Admin area: http://localhost:3000/admin.
 | `PORT`                | no       | Port to listen on (default `3000`)                 |
 | `ADMIN_PASSWORD`      | no       | Admin login password (default `admin123` — change it!) |
 | `DATABASE_URL`        | no       | PostgreSQL connection string. Uses `data.json` if unset |
+| `JAZZCASH_NUMBER`     | no       | JazzCash number shown to patients for payment     |
+| `EASYPAISA_NUMBER`    | no       | EasyPaisa number shown to patients for payment     |
+| `BANK_DETAILS`        | no       | Bank transfer instructions shown to patients       |
 | `TWILIO_ACCOUNT_SID`  | no       | Twilio account sid for SMS alerts                  |
 | `TWILIO_AUTH_TOKEN`   | no       | Twilio auth token                                  |
 | `TWILIO_FROM`         | no       | Twilio sender number                               |
@@ -53,10 +58,12 @@ The `render.yaml` blueprint deploys this app on Render. Connect the repo in the 
 | Method | Path                        | Description                                |
 | ------ | --------------------------- | ------------------------------------------ |
 | GET    | `/api/slots?date=YYYY-MM-DD`| Available time slots for a date            |
+| GET    | `/api/services`             | Services with fees and payment options     |
 | POST   | `/api/appointments`         | Create an appointment (JSON body)          |
 | GET    | `/api/appointments/:ref`    | Public lookup by reference                 |
 | POST   | `/api/admin/login`          | Login, returns a Bearer token              |
 | GET    | `/api/admin/appointments`   | List appointments (admin token)            |
-| GET    | `/api/admin/stats`          | Totals: all, pending, confirmed, today     |
+| GET    | `/api/admin/stats`          | Totals: all, pending, confirmed, today, paid, revenue |
 | PATCH  | `/api/admin/appointments/:id`| Update status (admin token)               |
+| PATCH  | `/api/admin/appointments/:id/payment` | Update payment status (admin token) |
 | DELETE | `/api/admin/appointments/:id`| Delete appointment (admin token)          |

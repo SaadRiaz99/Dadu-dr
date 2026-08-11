@@ -87,6 +87,9 @@
             <option value="Career Counseling">Career Counseling — Rs 1,200 / hour</option>
           </select>
           <p class="charge-note hidden" id="chargeNote">Career counseling is charged at <strong>Rs 1,200 per hour</strong>.</p>
+          <label class="field-label">How would you like to pay?</label>
+          <div class="pay-grid" id="payGrid"><p class="slot-hint">Loading payment options...</p></div>
+          <p class="charge-note hidden" id="payInfo"></p>
           <label class="field-label" for="name">Full name</label>
           <input type="text" id="name" name="name" class="field" placeholder="e.g. Ahmed Khan">
           <label class="field-label" for="phone">Phone number</label>
@@ -116,6 +119,10 @@
             <div class="review-row">
               <span class="review-label">Charge</span>
               <span class="review-value" id="rvCharge">—</span>
+            </div>
+            <div class="review-row">
+              <span class="review-label">Payment method</span>
+              <span class="review-value" id="rvPay">—</span>
             </div>
             <div class="review-row">
               <span class="review-label">Date</span>
@@ -172,6 +179,10 @@
               <span class="sum-label">Service</span>
               <span class="sum-value" id="sumService">ENT Consultation</span>
             </li>
+            <li>
+              <span class="sum-label">Payment</span>
+              <span class="sum-value" id="sumPay">Cash at Clinic</span>
+            </li>
           </ul>
           <div class="summary-foot">
             <span class="status-pill status-pending">Pending confirmation</span>
@@ -190,14 +201,66 @@
   </footer>
 
   <script>
-    const state = { date: '', time: '', slots: [] };
+    const state = { date: '', time: '', slots: [], paymentMethod: 'Cash at Clinic' };
+    const SERVICE_FEES = {};
+    const SERVICE_INFO = {};
 
     const dateInput = document.getElementById('date');
     const slotsBox = document.getElementById('slots');
     const msg = document.getElementById('formMsg');
     const btnStep2 = document.getElementById('toStep2');
+    const payGrid = document.getElementById('payGrid');
+    const payInfo = document.getElementById('payInfo');
 
-    dateInput.min = new Date().toISOString().split('T')[0];
+    /* ---------- services & payment methods ---------- */
+    loadServices();
+
+    async function loadServices() {
+      try {
+        const res = await fetch('/api/services');
+        const data = await res.json();
+        data.services.forEach((s) => {
+          SERVICE_FEES[s.name] = s.charge;
+          SERVICE_INFO[s.name] = s;
+        });
+        const methods = (data.services[0] && data.services[0].paymentMethods) || ['Cash at Clinic'];
+        payGrid.innerHTML = '';
+        methods.forEach((m) => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'pay-btn' + (m === state.paymentMethod ? ' active' : '');
+          btn.textContent = m;
+          btn.onclick = () => selectPay(m, btn);
+          payGrid.appendChild(btn);
+        });
+        refreshChargeNote();
+        updateSummary();
+      } catch (e) {
+        payGrid.innerHTML = '<p class="slot-hint">Could not load payment options.</p>';
+      }
+    }
+
+    function selectPay(m, btn) {
+      state.paymentMethod = m;
+      payGrid.querySelectorAll('.pay-btn').forEach((b) => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+      const info = SERVICE_INFO[serviceSel.value] || {};
+      const text = info.paymentInfo ? info.paymentInfo[m] : '';
+      if (text) {
+        payInfo.textContent = text;
+        payInfo.classList.remove('hidden');
+      } else {
+        payInfo.classList.add('hidden');
+      }
+      updateSummary();
+    }
+
+    function localDateStr() {
+      const d = new Date();
+      return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    }
+
+    dateInput.min = localDateStr();
 
     /* ---------- stepper ---------- */
     function goTo(step) {
@@ -270,22 +333,36 @@
 
     const serviceSel = document.getElementById('service');
     serviceSel.addEventListener('change', () => {
-      document.getElementById('chargeNote').classList.toggle('hidden', serviceSel.value !== 'Career Counseling');
+      refreshChargeNote();
       updateSummary();
     });
+
+    function refreshChargeNote() {
+      const feeText = SERVICE_FEES[serviceSel.value];
+      const chargeNote = document.getElementById('chargeNote');
+      if (feeText) {
+        chargeNote.innerHTML = serviceSel.value + ' is charged at <strong>' + feeText + '</strong>. Choose your payment method below.';
+        chargeNote.classList.remove('hidden');
+      } else {
+        chargeNote.classList.add('hidden');
+      }
+      selectPay(state.paymentMethod, null);
+    }
 
     function updateSummary() {
       document.getElementById('sumDate').textContent = state.date ? niceDate(state.date) : 'Not selected';
       document.getElementById('sumTime').textContent = state.time ? to12(state.time) : 'Not selected';
       document.getElementById('sumName').textContent = document.getElementById('name').value.trim() || '—';
       document.getElementById('sumService').textContent = serviceSel.value;
+      document.getElementById('sumPay').textContent = state.paymentMethod || 'Cash at Clinic';
     }
 
     /* ---------- review ---------- */
     function fillReview() {
-      const isCC = serviceSel.value === 'Career Counseling';
+      const feeText = SERVICE_FEES[serviceSel.value] || '';
       document.getElementById('rvService').textContent = serviceSel.value;
-      document.getElementById('rvCharge').textContent = isCC ? 'Rs 1,200 / hour' : '—';
+      document.getElementById('rvCharge').textContent = feeText || '—';
+      document.getElementById('rvPay').textContent = state.paymentMethod || 'Cash at Clinic';
       document.getElementById('rvDate').textContent = niceDate(state.date);
       document.getElementById('rvTime').textContent = to12(state.time);
       document.getElementById('rvName').textContent = document.getElementById('name').value.trim();
@@ -301,6 +378,7 @@
       const email = document.getElementById('email').value.trim();
       const message = document.getElementById('message').value.trim();
       const service = serviceSel.value;
+      const payment_method = state.paymentMethod;
 
       if (!name || !phone || !email) {
         msg.textContent = 'Please fill in your name, phone and email.';
@@ -322,7 +400,7 @@
         const res = await fetch('/api/appointments', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, phone, email, date: state.date, time: state.time, message, service })
+          body: JSON.stringify({ name, phone, email, date: state.date, time: state.time, message, service, payment_method })
         });
         const data = await res.json();
         if (!res.ok) {

@@ -3,12 +3,14 @@ function formatAppointment(a) {
     'New appointment request!',
     '',
     'Ref: ' + a.ref,
+    'Number for the day: #' + (a.serial || '—'),
     'Patient: ' + a.name,
     'Phone: ' + a.phone,
     'Email: ' + a.email,
     'Date: ' + a.date,
     'Time: ' + a.time,
     'Status: ' + (a.status || 'Pending'),
+    'Payment: ' + (a.payment_method || 'Cash at Clinic') + ' (' + (a.payment_status || 'Unpaid') + ')',
     'Message: ' + (a.message || '-')
   ].join('\n');
 }

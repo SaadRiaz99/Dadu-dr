@@ -115,10 +115,12 @@
         const a = data.appointment;
         const statusClass = 'status-' + (a.status || 'pending').toLowerCase();
         resultCard.innerHTML =
+          row('Your number for the day', esc('#' + (a.serial || '—'))) +
           row('Reference', esc(a.ref)) +
           row('Doctor', esc(a.doctor || 'Prof. Dr. Javed Iqbal')) +
           row('Service', esc(a.service || 'ENT Consultation')) +
           row('Charge', esc(a.charge || '—')) +
+          row('Payment method', esc(a.payment_method || 'Cash at Clinic')) +
           row('Date', esc(niceDate(a.date))) +
           row('Time', esc(to12(a.time))) +
           '<div class="success-row"><span>Status</span><strong><span class="status-pill ' + statusClass + '">' + esc(a.status) + '</span></strong></div>';
