@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: doctor-site
+    name: Javed Iqbal
     runtime: node
     plan: free
     region: oregon
